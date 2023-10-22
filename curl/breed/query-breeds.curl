@@ -1,0 +1,1 @@
+url=http://localhost:8000/breeds?category_eq=Medium&page=1&size=10
