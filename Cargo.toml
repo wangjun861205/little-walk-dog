@@ -1,0 +1,19 @@
+[package]
+name = "little-walk-dog"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+actix-web = "4.4.0"
+chrono = { version = "0.4.31", features = ["serde"] }
+dotenv = "0.15.0"
+env_logger = "0.10.0"
+futures = "0.3.28"
+mongodb = "2.7.0"
+nb-from-env = "^0.2"
+serde = { version = "1.0.188", features = ["derive"] }
+sqlx = { version = "0.7.1", features = ["postgres"] }
+surrealdb = "1.0.0"
+tokio = { version = "1.32.0" }

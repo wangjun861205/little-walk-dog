@@ -1,0 +1,4 @@
+url=http://localhost:8000/dogs
+request=POST
+header=Content-Type:application/json
+data=@create-dog.json

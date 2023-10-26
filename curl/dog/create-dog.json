@@ -1,0 +1,11 @@
+{
+  "name": "不二",
+  "breed": "6534c1e563e5adcdbf8a3790",
+  "gender": "Male",
+  "birthday": "2022-01-01T00:00:00+08:00",
+  "is_sterilized": false,
+  "introduction": "",
+  "owner_id": "1",
+  "tags": [],
+  "portrait_id": "1"
+}
