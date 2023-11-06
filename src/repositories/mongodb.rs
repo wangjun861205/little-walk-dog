@@ -49,7 +49,7 @@ impl Repository for MongoDB {
             .map(|id| id.to_string())
     }
 
-    async fn create_dog(&self, dog: &DogCreate) -> Result<String, Error> {
+    async fn create_dog(&self, owner_id: &str, dog: &DogCreate) -> Result<String, Error> {
         let now = Local::now();
         let dog = doc! {
             "name": &dog.name,
@@ -58,7 +58,7 @@ impl Repository for MongoDB {
             "birthday": &dog.birthday.to_rfc3339(),
             "is_sterilized": &dog.is_sterilized,
             "introduction": &dog.introduction,
-            "owner_id": &dog.owner_id,
+            "owner_id": owner_id,
             "tags": &dog.tags,
             "portrait_id": &dog.portrait_id,
             "created_at": now.to_rfc3339(),

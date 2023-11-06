@@ -43,8 +43,8 @@ where
         self.repository.query_breeds(query, page).await
     }
 
-    pub async fn create_dog(&self, dog: &DogCreate) -> Result<String, Error> {
-        self.repository.create_dog(dog).await
+    pub async fn create_dog(&self, owner_id: &str, dog: &DogCreate) -> Result<String, Error> {
+        self.repository.create_dog(owner_id, dog).await
     }
 
     pub async fn update_portrait(&self, id: &str, portrait_id: &str) -> Result<bool, Error> {

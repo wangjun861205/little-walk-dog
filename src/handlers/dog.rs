@@ -4,9 +4,9 @@ use crate::core::{
     service::Service,
 };
 use actix_web::{
-    error::ErrorInternalServerError,
-    web::{Data, Json, Path, Query},
-    Error,
+    error::{ErrorBadRequest, ErrorForbidden, ErrorInternalServerError},
+    web::{Data, Header, Json, Path, Query},
+    Error, HttpRequest,
 };
 use serde::Serialize;
 
@@ -17,11 +17,12 @@ pub struct CreateDogResult {
     pub id: String,
 }
 
-pub async fn create_dog<R>(serive: Data<Service<R>>, Json(dog): Json<DogCreate>) -> Result<Json<CreateDogResult>, Error>
+pub async fn create_dog<R>(serive: Data<Service<R>>, req: HttpRequest, Json(dog): Json<DogCreate>) -> Result<Json<CreateDogResult>, Error>
 where
     R: Repository,
 {
-    serive.create_dog(&dog).await.map(|id| Json(CreateDogResult { id })).map_err(ErrorInternalServerError)
+    let uid = req.headers().get("X-User-ID").ok_or(ErrorForbidden("not allowed"))?.to_str().map_err(|e| ErrorForbidden(e))?;
+    serive.create_dog(uid, &dog).await.map(|id| Json(CreateDogResult { id })).map_err(ErrorInternalServerError)
 }
 
 #[derive(Debug, Serialize)]
