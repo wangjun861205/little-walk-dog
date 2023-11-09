@@ -47,7 +47,7 @@ where
         self.repository.create_dog(owner_id, dog).await
     }
 
-    pub async fn update_portrait(&self, id: &str, portrait_id: &str) -> Result<bool, Error> {
+    pub async fn update_dog_portrait(&self, id: &str, portrait_id: &str) -> Result<bool, Error> {
         self.repository
             .update_dog(
                 id,
@@ -77,5 +77,14 @@ where
 
     pub async fn query_dogs(&self, query: &DogQuery, page: &Pagination) -> Result<(Vec<Dog>, i64), Error> {
         self.repository.query_dogs(query, page).await
+    }
+
+    pub async fn is_owner_of_the_dog(&self, owner_id: &str, dog_id: &str) -> Result<bool, Error> {
+        self.repository
+            .exists_dog(&DogQuery {
+                id_eq: Some(dog_id.into()),
+                owner_id_eq: Some(owner_id.into()),
+            })
+            .await
     }
 }

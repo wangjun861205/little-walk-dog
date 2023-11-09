@@ -21,4 +21,5 @@ pub trait Repository {
     async fn delete_dog(&self, id: &str) -> Result<bool, Error>;
     async fn update_dog(&self, id: &str, dog: &DogUpdate) -> Result<bool, Error>;
     async fn query_dogs(&self, query: &DogQuery, page: &Pagination) -> Result<(Vec<Dog>, i64), Error>;
+    async fn exists_dog(&self, query: &DogQuery) -> Result<bool, Error>;
 }

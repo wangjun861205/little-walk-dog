@@ -1,3 +1,5 @@
+use std::os::fd::OwnedFd;
+
 use mongodb::{
     bson::{doc, from_document, oid::ObjectId, Document},
     Database,
@@ -95,6 +97,37 @@ impl Repository for MongoDB {
     }
 
     async fn update_dog(&self, id: &str, dog: &DogUpdate) -> Result<bool, Error> {
+        let mut update = doc! {};
+        if let Some(name) = &dog.name {
+            update.insert("name", name);
+        }
+        if let Some(gender) = &dog.gender {
+            update.insert("gender", gender);
+        }
+        if let Some(breed) = &dog.breed {
+            update.insert("breed", breed);
+        }
+        if let Some(birthday) = &dog.birthday {
+            update.insert("birthday", birthday);
+        }
+        if let Some(is_sterilized) = &dog.is_sterilized {
+            update.insert("is_sterilized", is_sterilized);
+        }
+        if let Some(introduction) = &dog.introduction {
+            update.insert("introduction", introduction);
+        }
+        if let Some(owner_id) = &dog.owner_id {
+            update.insert("owner_id", owner_id);
+        }
+        if let Some(tags) = &dog.tags {
+            update.insert("tags", tags);
+        }
+        if let Some(portrait_id) = &dog.portrait_id {
+            update.insert("portrait_id", portrait_id);
+        }
+        if !update.is_empty() {
+            update.insert("updated_at", Local::now().to_rfc3339());
+        }
         Ok(self
             .db
             .collection::<DogUpdate>("dogs")
@@ -102,16 +135,7 @@ impl Repository for MongoDB {
                 doc! {
                     "_id": ObjectId::parse_str(id).map_err(|e| Error::new("failed to update dog").with_cause(e))?
                 },
-                doc! { "$set": {
-                "name": &dog.name,
-                "gender": &dog.gender,
-                "breed": &dog.breed,
-                "birthday": &dog.birthday,
-                "is_sterilized": &dog.is_sterilized,
-                "introduction": &dog.introduction,
-                "owner_id": &dog.owner_id,
-                "tags": &dog.tags,
-                "portrait_id": &dog.portrait_id }},
+                doc! { "$set": update},
                 None,
             )
             .await
@@ -233,6 +257,23 @@ impl Repository for MongoDB {
             .map(|ds| ds.into_iter().map(|d| from_document::<Dog>(d).unwrap()).collect())
             .map_err(|e| Error::new("failed to query my dogs").with_cause(e))?;
         Ok((dogs, count as i64))
+    }
+
+    async fn exists_dog(&self, query: &DogQuery) -> Result<bool, Error> {
+        let mut q = doc! {};
+        if let Some(id) = &query.id_eq {
+            q.insert("_id", ObjectId::parse_str(id).map_err(|e| Error::new("failed to query my dogs").with_cause(e))?);
+        }
+        if let Some(owner_id) = &query.owner_id_eq {
+            q.insert("owner_id", owner_id);
+        }
+        Ok(self
+            .db
+            .collection::<Dog>("dogs")
+            .count_documents(q.clone(), None)
+            .await
+            .map_err(|e| Error::new("failed to query my dogs").with_cause(e))?
+            > 0)
     }
 }
 

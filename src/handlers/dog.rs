@@ -8,7 +8,7 @@ use actix_web::{
     web::{Data, Header, Json, Path, Query},
     Error, HttpRequest,
 };
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 
 use super::common::{HeaderUserID, ListResp};
 
@@ -49,4 +49,41 @@ where
 {
     let (dogs, total) = service.query_dogs(&query, &page).await.map_err(ErrorInternalServerError)?;
     Ok(Json(ListResp::new(dogs, total)))
+}
+
+#[derive(Debug, Deserialize)]
+pub struct IsOwnerOfTheDogReq {
+    id: String,
+    owner_id: String,
+}
+
+#[derive(Debug, Serialize)]
+pub struct IsOwnerOfTheDogResp {
+    is_owner: bool,
+}
+
+pub async fn is_owner_of_the_dog<R>(service: Data<Service<R>>, Query(query): Query<IsOwnerOfTheDogReq>) -> Result<Json<IsOwnerOfTheDogResp>, Error>
+where
+    R: Repository,
+{
+    let is_owner = service.is_owner_of_the_dog(&query.owner_id, &query.id).await.map_err(ErrorInternalServerError)?;
+    Ok(Json(IsOwnerOfTheDogResp { is_owner }))
+}
+
+#[derive(Debug, Deserialize)]
+pub struct UpdateDogPortraitReq {
+    portrait_id: String,
+}
+
+#[derive(Debug, Serialize)]
+pub struct UpdateDogPortraitResp {
+    has_updated: bool,
+}
+
+pub async fn update_dog_portrait<R>(service: Data<Service<R>>, dog_id: Path<(String,)>, Query(query): Query<UpdateDogPortraitReq>) -> Result<Json<UpdateDogPortraitResp>, Error>
+where
+    R: Repository,
+{
+    let has_updated = service.update_dog_portrait(&dog_id.as_ref().0, &query.portrait_id).await.map_err(ErrorInternalServerError)?;
+    Ok(Json(UpdateDogPortraitResp { has_updated }))
 }

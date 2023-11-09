@@ -60,5 +60,6 @@ pub struct DogUpdate {
 
 #[derive(Debug, Default, Serialize, Deserialize)]
 pub struct DogQuery {
+    pub id_eq: Option<String>,
     pub owner_id_eq: Option<String>,
 }
