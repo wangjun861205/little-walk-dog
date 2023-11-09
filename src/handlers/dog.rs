@@ -80,7 +80,7 @@ pub struct UpdateDogPortraitResp {
     has_updated: bool,
 }
 
-pub async fn update_dog_portrait<R>(service: Data<Service<R>>, dog_id: Path<(String,)>, Query(query): Query<UpdateDogPortraitReq>) -> Result<Json<UpdateDogPortraitResp>, Error>
+pub async fn update_dog_portrait<R>(service: Data<Service<R>>, dog_id: Path<(String,)>, Json(query): Json<UpdateDogPortraitReq>) -> Result<Json<UpdateDogPortraitResp>, Error>
 where
     R: Repository,
 {
