@@ -49,3 +49,8 @@ pub struct BreedUpdate {
 pub struct BreedQuery {
     pub category_eq: Option<Category>,
 }
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct BreedSpecific {
+    pub id: String,
+}

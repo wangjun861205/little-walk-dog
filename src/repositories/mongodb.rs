@@ -103,7 +103,7 @@ impl Repository for MongoDB {
             update.insert("gender", gender);
         }
         if let Some(breed) = &dog.breed {
-            update.insert("breed", breed);
+            update.insert("breed", &breed.id);
         }
         if let Some(birthday) = &dog.birthday {
             update.insert("birthday", birthday);

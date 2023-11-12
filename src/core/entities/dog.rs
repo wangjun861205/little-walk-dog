@@ -2,6 +2,8 @@ use crate::core::entities::breed::Breed;
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 
+use super::breed::BreedSpecific;
+
 // 性别
 #[derive(Debug, Serialize, Deserialize)]
 pub enum Gender {
@@ -49,9 +51,9 @@ pub struct DogCreate {
 pub struct DogUpdate {
     pub name: Option<String>,
     pub gender: Option<String>,
-    pub breed: Option<String>,       // 品种
-    pub birthday: Option<String>,    // 生日
-    pub is_sterilized: Option<bool>, // 是否绝育
+    pub breed: Option<BreedSpecific>, // 品种
+    pub birthday: Option<String>,     // 生日
+    pub is_sterilized: Option<bool>,  // 是否绝育
     pub introduction: Option<String>,
     pub owner_id: Option<String>,
     pub tags: Option<Vec<String>>,

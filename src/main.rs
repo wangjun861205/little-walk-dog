@@ -49,7 +49,8 @@ async fn main() -> std::io::Result<()> {
                     .route("", put().to(handlers::dog::update_dog::<MongoDB>))
                     .route("mine", get().to(handlers::dog::my_dogs::<MongoDB>))
                     .route("exists", get().to(handlers::dog::is_owner_of_the_dog::<MongoDB>))
-                    .route("{id}/portrait", put().to(handlers::dog::update_dog_portrait::<MongoDB>)),
+                    .route("{id}/portrait", put().to(handlers::dog::update_dog_portrait::<MongoDB>))
+                    .route("{id}", put().to(handlers::dog::update_dog::<MongoDB>)),
             )
     })
     .bind(config.listen_address)?
