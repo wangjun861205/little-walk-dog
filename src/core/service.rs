@@ -39,8 +39,8 @@ where
         self.repository.delete_breed(id).await
     }
 
-    pub async fn query_breeds(&self, query: &BreedQuery, page: &Pagination) -> Result<(Vec<Breed>, i64), Error> {
-        self.repository.query_breeds(query, page).await
+    pub async fn query_breeds(&self, query: &BreedQuery) -> Result<(Vec<Breed>, i64), Error> {
+        self.repository.query_breeds(query).await
     }
 
     pub async fn create_dog(&self, owner_id: &str, dog: &DogCreate) -> Result<String, Error> {

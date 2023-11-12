@@ -19,10 +19,10 @@ where
     service.create_breed(breed).await.map_err(ErrorInternalServerError)
 }
 
-pub(crate) async fn breeds<R>(service: Data<Service<R>>, Query(query): Query<BreedQuery>, Query(page): Query<Pagination>) -> Result<Json<ListResp<Breed>>, Error>
+pub(crate) async fn breeds<R>(service: Data<Service<R>>, Query(query): Query<BreedQuery>) -> Result<Json<ListResp<Breed>>, Error>
 where
     R: Repository,
 {
-    let (breeds, total) = service.query_breeds(&query, &page).await.map_err(ErrorInternalServerError)?;
+    let (breeds, total) = service.query_breeds(&query).await.map_err(ErrorInternalServerError)?;
     Ok(Json(ListResp::new(breeds, total)))
 }

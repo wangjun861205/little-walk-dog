@@ -16,7 +16,7 @@ pub struct Pagination {
 pub trait Repository {
     async fn create_breed(&self, breed: &BreedCreate) -> Result<String, Error>;
     async fn delete_breed(&self, id: &str) -> Result<bool, Error>;
-    async fn query_breeds(&self, query: &BreedQuery, page: &Pagination) -> Result<(Vec<Breed>, i64), Error>;
+    async fn query_breeds(&self, query: &BreedQuery) -> Result<(Vec<Breed>, i64), Error>;
     async fn create_dog(&self, owner_id: &str, dog: &DogCreate) -> Result<String, Error>;
     async fn delete_dog(&self, id: &str) -> Result<bool, Error>;
     async fn update_dog(&self, id: &str, dog: &DogUpdate) -> Result<bool, Error>;

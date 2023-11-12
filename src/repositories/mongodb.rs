@@ -1,5 +1,3 @@
-use std::os::fd::OwnedFd;
-
 use mongodb::{
     bson::{doc, from_document, oid::ObjectId, Document},
     Database,
@@ -144,7 +142,7 @@ impl Repository for MongoDB {
             > 0)
     }
 
-    async fn query_breeds(&self, query: &BreedQuery, page: &Pagination) -> Result<(Vec<Breed>, i64), Error> {
+    async fn query_breeds(&self, query: &BreedQuery) -> Result<(Vec<Breed>, i64), Error> {
         let mut q = doc! {};
         if let Some(category) = &query.category_eq {
             q.insert("category", category.to_string());
@@ -161,8 +159,6 @@ impl Repository for MongoDB {
             .find(
                 q,
                 FindOptions::builder()
-                    .limit(page.size)
-                    .skip(((page.page - 1) * page.size) as u64)
                     .projection(doc! {
                         "id": { "$toString": "$_id" },
                         "category": 1,
