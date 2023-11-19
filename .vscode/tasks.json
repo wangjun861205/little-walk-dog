@@ -1,0 +1,10 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "start mongodb container",
+      "command": "[[ $(docker ps -f 'name=little-walk-dog-mongo' --format='{{.Names}}') == 'little-walk-dog-mongo' ]] || docker start little-walk-dog-mongo",
+      "type": "shell"
+    }
+  ]
+}
