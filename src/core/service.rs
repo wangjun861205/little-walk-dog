@@ -84,6 +84,7 @@ where
             .exists_dog(&DogQuery {
                 id_eq: Some(dog_id.into()),
                 owner_id_eq: Some(owner_id.into()),
+                ..Default::default()
             })
             .await
     }

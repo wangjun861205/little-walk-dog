@@ -181,6 +181,12 @@ impl Repository for MongoDB {
         if let Some(owner_id) = &query.owner_id_eq {
             q.insert("owner_id", owner_id);
         }
+        if let Some(id_in) = &query.id_in {
+            q.insert(
+                "_id",
+                doc! { "$in": id_in.into_iter().map(|id| ObjectId::parse_str(id).map_err(|e| Error::new("failed to query my dogs").with_cause(e))).collect::<Result<Vec<_>, Error>>()? },
+            );
+        }
         let count = self
             .db
             .collection::<Dog>("dogs")

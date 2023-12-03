@@ -6,11 +6,13 @@ use crate::core::{
 use actix_web::{
     error::{ErrorBadRequest, ErrorForbidden, ErrorInternalServerError},
     web::{Data, Header, Json, Path, Query},
-    Error, HttpRequest,
+    Error, FromRequest, HttpRequest,
 };
 use serde::{Deserialize, Serialize};
 
 use super::common::{HeaderUserID, ListResp};
+use std::future::Future;
+use std::pin::Pin;
 
 #[derive(Debug, Serialize)]
 pub struct CreateDogResult {
@@ -43,7 +45,42 @@ where
     service.my_dogs(&uid, &page).await.map_err(ErrorInternalServerError).map(Json)
 }
 
-pub async fn dogs<R>(service: Data<Service<R>>, Query(query): Query<DogQuery>, Query(page): Query<Pagination>) -> Result<Json<ListResp<Dog>>, Error>
+impl FromRequest for DogQuery {
+    type Error = Error;
+    type Future = Pin<Box<dyn Future<Output = Result<Self, Self::Error>>>>;
+
+    fn from_request(req: &HttpRequest, payload: &mut actix_web::dev::Payload) -> Self::Future {
+        let mut query = DogQuery::default();
+        let id_eq = Option::<String>::from_request(req, payload);
+        let owner_id_eq = Option::<String>::from_request(req, payload);
+        match req
+            .query_string()
+            .split("&")
+            .filter(|&pair| pair.starts_with("id_in"))
+            .map(|pair| pair.split("=").nth(1).ok_or(ErrorBadRequest(format!("invalid query param: {}", pair))).map(|v| v.to_owned()))
+            .collect::<Result<Vec<String>, Error>>()
+        {
+            Ok(id_in) => {
+                if id_in.is_empty() {
+                    return Box::pin(async move {
+                        query.id_eq = id_eq.await?.filter(|v| !v.is_empty());
+                        query.owner_id_eq = owner_id_eq.await?.filter(|v| !v.is_empty());
+                        Ok(query)
+                    });
+                }
+                Box::pin(async move {
+                    query.id_eq = id_eq.await?.filter(|v| !v.is_empty());
+                    query.owner_id_eq = owner_id_eq.await?.filter(|v| !v.is_empty());
+                    query.id_in = Some(id_in);
+                    Ok(query)
+                })
+            }
+            Err(e) => Box::pin(async move { Err(e) }),
+        }
+    }
+}
+
+pub async fn dogs<R>(service: Data<Service<R>>, query: DogQuery, Query(page): Query<Pagination>) -> Result<Json<ListResp<Dog>>, Error>
 where
     R: Repository,
 {
