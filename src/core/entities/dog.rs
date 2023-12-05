@@ -3,6 +3,7 @@ use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 
 use super::breed::BreedSpecific;
+use nb_serde_query::{deserialize_option_array, serialize_option_array, Array};
 
 // 性别
 #[derive(Debug, Serialize, Deserialize)]
@@ -63,6 +64,7 @@ pub struct DogUpdate {
 #[derive(Debug, Default, Serialize, Deserialize)]
 pub struct DogQuery {
     pub id_eq: Option<String>,
-    pub id_in: Option<Vec<String>>,
+    #[serde(serialize_with = "serialize_option_array", deserialize_with = "deserialize_option_array")]
+    pub id_in: Option<Array<String>>,
     pub owner_id_eq: Option<String>,
 }

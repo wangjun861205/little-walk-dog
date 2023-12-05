@@ -80,7 +80,7 @@ impl FromRequest for DogQuery {
     }
 }
 
-pub async fn dogs<R>(service: Data<Service<R>>, query: DogQuery, Query(page): Query<Pagination>) -> Result<Json<ListResp<Dog>>, Error>
+pub async fn dogs<R>(service: Data<Service<R>>, Query(query): Query<DogQuery>, Query(page): Query<Pagination>) -> Result<Json<ListResp<Dog>>, Error>
 where
     R: Repository,
 {

@@ -17,3 +17,4 @@ serde = { version = "1.0.188", features = ["derive"] }
 sqlx = { version = "0.7.1", features = ["postgres"] }
 surrealdb = "1.0.0"
 tokio = { version = "1.32.0" }
+nb-serde-query = {path = "../nb-serde-query"}
