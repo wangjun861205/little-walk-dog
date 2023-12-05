@@ -1,7 +1,7 @@
 use crate::{
     core::{
-        entities::breed::{Breed, BreedCreate, BreedQuery},
-        repository::{Pagination, Repository},
+        entities::Breed,
+        repository::{BreedCreate, BreedQuery, Repository},
         service::Service,
     },
     handlers::common::ListResp,

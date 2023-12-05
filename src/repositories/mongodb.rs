@@ -1,15 +1,14 @@
+use std::ops::Deref;
+
 use mongodb::{
     bson::{doc, from_document, oid::ObjectId, Document},
     Database,
 };
 
 use crate::core::{
-    entities::{
-        breed::{Breed, BreedCreate, BreedQuery},
-        dog::{Dog, DogCreate, DogQuery, DogUpdate},
-    },
+    entities::{Breed, Dog},
     error::Error,
-    repository::{Pagination, Repository},
+    repository::{BreedCreate, BreedQuery, DogCreate, DogQuery, DogUpdate, Repository},
 };
 
 use mongodb::options::FindOptions;
@@ -54,7 +53,7 @@ impl Repository for MongoDB {
         let dog = doc! {
             "name": &dog.name,
             "gender": &dog.gender,
-            "breed": &dog.breed,
+            "breed": &dog.breed.id.as_ref().ok_or(Error::new("breed cannot be null"))?,
             "birthday": &dog.birthday.to_rfc3339(),
             "is_sterilized": &dog.is_sterilized,
             "introduction": &dog.introduction,
@@ -144,7 +143,7 @@ impl Repository for MongoDB {
 
     async fn query_breeds(&self, query: &BreedQuery) -> Result<(Vec<Breed>, i64), Error> {
         let mut q = doc! {};
-        if let Some(category) = &query.category_eq {
+        if let Some(category) = &query.category {
             q.insert("category", category.to_string());
         }
         let count = self
@@ -176,15 +175,15 @@ impl Repository for MongoDB {
         Ok((breeds, count as i64))
     }
 
-    async fn query_dogs(&self, query: &DogQuery, page: &Pagination) -> Result<(Vec<crate::core::entities::dog::Dog>, i64), Error> {
+    async fn query_dogs(&self, query: &DogQuery) -> Result<(Vec<Dog>, i64), Error> {
         let mut q = doc! {};
-        if let Some(owner_id) = &query.owner_id_eq {
+        if let Some(owner_id) = &query.owner_id {
             q.insert("owner_id", owner_id);
         }
         if let Some(id_in) = &query.id_in {
             q.insert(
                 "_id",
-                doc! { "$in": id_in.into_iter().map(|id| ObjectId::parse_str(id).map_err(|e| Error::new("failed to query my dogs").with_cause(e))).collect::<Result<Vec<_>, Error>>()? },
+                doc! { "$in": id_in.deref().iter().map(|id| ObjectId::parse_str(id).map_err(|e| Error::new("failed to query my dogs").with_cause(e))).collect::<Result<Vec<_>, Error>>()? },
             );
         }
         let count = self
@@ -202,10 +201,10 @@ impl Repository for MongoDB {
                         "$match": q,
                     },
                     doc! {
-                        "$limit": page.size,
+                        "$limit": query.pagination.as_ref().map(|p| p.limit)
                     },
                     doc! {
-                        "$skip": (page.page - 1) * page.size
+                        "$skip": query.pagination.as_ref().map(|p| p.skip)
                     },
                     doc! {
                         "$addFields": {
@@ -263,10 +262,10 @@ impl Repository for MongoDB {
 
     async fn exists_dog(&self, query: &DogQuery) -> Result<bool, Error> {
         let mut q = doc! {};
-        if let Some(id) = &query.id_eq {
+        if let Some(id) = &query.id {
             q.insert("_id", ObjectId::parse_str(id).map_err(|e| Error::new("failed to query my dogs").with_cause(e))?);
         }
-        if let Some(owner_id) = &query.owner_id_eq {
+        if let Some(owner_id) = &query.owner_id {
             q.insert("owner_id", owner_id);
         }
         Ok(self

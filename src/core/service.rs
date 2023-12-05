@@ -1,19 +1,12 @@
 use std::default;
 
 use crate::core::{
-    entities::{
-        breed::{BreedCreate, BreedQuery},
-        dog::DogUpdate,
-    },
     error::Error,
-    repository::Repository,
+    repository::{BreedCreate, BreedQuery, DogCreate, DogQuery, DogUpdate, Repository},
 };
 
 use super::{
-    entities::{
-        breed::Breed,
-        dog::{Dog, DogCreate, DogQuery},
-    },
+    entities::{Breed, Dog},
     repository::Pagination,
 };
 
@@ -63,27 +56,25 @@ where
         self.repository.update_dog(id, dog).await
     }
 
-    pub async fn my_dogs(&self, owner_id: &str, page: &Pagination) -> Result<(Vec<Dog>, i64), Error> {
+    pub async fn my_dogs(&self, owner_id: &str, pagination: Option<Pagination>) -> Result<(Vec<Dog>, i64), Error> {
         self.repository
-            .query_dogs(
-                &DogQuery {
-                    owner_id_eq: Some(owner_id.to_owned()),
-                    ..default::Default::default()
-                },
-                page,
-            )
+            .query_dogs(&DogQuery {
+                owner_id: Some(owner_id.to_owned()),
+                pagination,
+                ..default::Default::default()
+            })
             .await
     }
 
-    pub async fn query_dogs(&self, query: &DogQuery, page: &Pagination) -> Result<(Vec<Dog>, i64), Error> {
-        self.repository.query_dogs(query, page).await
+    pub async fn query_dogs(&self, query: &DogQuery) -> Result<(Vec<Dog>, i64), Error> {
+        self.repository.query_dogs(query).await
     }
 
     pub async fn is_owner_of_the_dog(&self, owner_id: &str, dog_id: &str) -> Result<bool, Error> {
         self.repository
             .exists_dog(&DogQuery {
-                id_eq: Some(dog_id.into()),
-                owner_id_eq: Some(owner_id.into()),
+                id: Some(dog_id.into()),
+                owner_id: Some(owner_id.into()),
                 ..Default::default()
             })
             .await

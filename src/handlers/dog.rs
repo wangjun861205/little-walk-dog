@@ -1,6 +1,6 @@
 use crate::core::{
-    entities::dog::{Dog, DogCreate, DogQuery, DogUpdate},
-    repository::{Pagination, Repository},
+    entities::Dog,
+    repository::{DogCreate, DogQuery, DogUpdate, Pagination, Repository},
     service::Service,
 };
 use actix_web::{
@@ -38,53 +38,18 @@ where
     service.update_dog(&id.0, &dog).await.map_err(ErrorInternalServerError).map(|updated| Json(UpdateDogResult { updated }))
 }
 
-pub async fn my_dogs<R>(service: Data<Service<R>>, HeaderUserID(uid): HeaderUserID, Query(page): Query<Pagination>) -> Result<Json<(Vec<Dog>, i64)>, Error>
+pub async fn my_dogs<R>(service: Data<Service<R>>, HeaderUserID(uid): HeaderUserID, Query(pagination): Query<Option<Pagination>>) -> Result<Json<(Vec<Dog>, i64)>, Error>
 where
     R: Repository,
 {
-    service.my_dogs(&uid, &page).await.map_err(ErrorInternalServerError).map(Json)
+    service.my_dogs(&uid, pagination).await.map_err(ErrorInternalServerError).map(Json)
 }
 
-impl FromRequest for DogQuery {
-    type Error = Error;
-    type Future = Pin<Box<dyn Future<Output = Result<Self, Self::Error>>>>;
-
-    fn from_request(req: &HttpRequest, payload: &mut actix_web::dev::Payload) -> Self::Future {
-        let mut query = DogQuery::default();
-        let id_eq = Option::<String>::from_request(req, payload);
-        let owner_id_eq = Option::<String>::from_request(req, payload);
-        match req
-            .query_string()
-            .split("&")
-            .filter(|&pair| pair.starts_with("id_in"))
-            .map(|pair| pair.split("=").nth(1).ok_or(ErrorBadRequest(format!("invalid query param: {}", pair))).map(|v| v.to_owned()))
-            .collect::<Result<Vec<String>, Error>>()
-        {
-            Ok(id_in) => {
-                if id_in.is_empty() {
-                    return Box::pin(async move {
-                        query.id_eq = id_eq.await?.filter(|v| !v.is_empty());
-                        query.owner_id_eq = owner_id_eq.await?.filter(|v| !v.is_empty());
-                        Ok(query)
-                    });
-                }
-                Box::pin(async move {
-                    query.id_eq = id_eq.await?.filter(|v| !v.is_empty());
-                    query.owner_id_eq = owner_id_eq.await?.filter(|v| !v.is_empty());
-                    query.id_in = Some(id_in);
-                    Ok(query)
-                })
-            }
-            Err(e) => Box::pin(async move { Err(e) }),
-        }
-    }
-}
-
-pub async fn dogs<R>(service: Data<Service<R>>, Query(query): Query<DogQuery>, Query(page): Query<Pagination>) -> Result<Json<ListResp<Dog>>, Error>
+pub async fn dogs<R>(service: Data<Service<R>>, Query(query): Query<DogQuery>) -> Result<Json<ListResp<Dog>>, Error>
 where
     R: Repository,
 {
-    let (dogs, total) = service.query_dogs(&query, &page).await.map_err(ErrorInternalServerError)?;
+    let (dogs, total) = service.query_dogs(&query).await.map_err(ErrorInternalServerError)?;
     Ok(Json(ListResp::new(dogs, total)))
 }
 

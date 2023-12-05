@@ -34,23 +34,33 @@ pub struct Breed {
     pub updated_at: DateTime<Utc>,
 }
 
+// 性别
 #[derive(Debug, Serialize, Deserialize)]
-pub struct BreedCreate {
-    pub category: Category,
-    pub name: String,
+pub enum Gender {
+    Other,
+    Male,
+    Female,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
-pub struct BreedUpdate {
-    pub name: Option<String>,
+impl Default for Gender {
+    fn default() -> Self {
+        Self::Other
+    }
 }
 
-#[derive(Debug, Default, Serialize, Deserialize)]
-pub struct BreedQuery {
-    pub category_eq: Option<Category>,
-}
-
+// 狗狗
 #[derive(Debug, Serialize, Deserialize)]
-pub struct BreedSpecific {
+pub struct Dog {
     pub id: String,
+    pub name: String,
+    pub gender: Gender,
+    pub breed: Breed,            // 品种
+    pub birthday: DateTime<Utc>, // 生日
+    pub is_sterilized: bool,     // 是否绝育
+    pub introduction: String,
+    pub owner_id: String,
+    pub tags: Vec<String>,
+    pub portrait_id: Option<String>,
+    pub created_at: DateTime<Utc>,
+    pub updated_at: DateTime<Utc>,
 }

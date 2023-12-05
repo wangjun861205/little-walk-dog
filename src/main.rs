@@ -1,5 +1,3 @@
-#![feature(async_fn_in_trait)]
-
 mod core;
 mod handlers;
 mod middlewares;
@@ -37,21 +35,20 @@ async fn main() -> std::io::Result<()> {
     let client = Client::with_uri_str(config.mongodb_uri).await.expect("failed to connect to mongodb");
     let service = Data::new(Service::new(MongoDB::new(client.database(&config.mongodb_database_name))));
     HttpServer::new(move || {
-        App::new()
-            .app_data(service.clone())
-            .wrap(ResponseEncoding)
-            .wrap(Logger::new(config.log_format.as_str()))
-            .service(resource("breeds").post(handlers::breed::create_breed::<MongoDB>).get(handlers::breed::breeds::<MongoDB>))
-            .service(
-                scope("dogs")
-                    .route("", post().to(handlers::dog::create_dog::<MongoDB>))
-                    .route("", get().to(handlers::dog::dogs::<MongoDB>))
-                    .route("", put().to(handlers::dog::update_dog::<MongoDB>))
-                    .route("mine", get().to(handlers::dog::my_dogs::<MongoDB>))
-                    .route("exists", get().to(handlers::dog::is_owner_of_the_dog::<MongoDB>))
-                    .route("{id}/portrait", put().to(handlers::dog::update_dog_portrait::<MongoDB>))
-                    .route("{id}", put().to(handlers::dog::update_dog::<MongoDB>)),
-            )
+        App::new().app_data(service.clone()).wrap(ResponseEncoding).wrap(Logger::new(config.log_format.as_str())).service(
+            scope("apis")
+                .service(resource("breeds").post(handlers::breed::create_breed::<MongoDB>).get(handlers::breed::breeds::<MongoDB>))
+                .service(
+                    scope("dogs")
+                        .route("", post().to(handlers::dog::create_dog::<MongoDB>))
+                        .route("", get().to(handlers::dog::dogs::<MongoDB>))
+                        .route("", put().to(handlers::dog::update_dog::<MongoDB>))
+                        .route("mine", get().to(handlers::dog::my_dogs::<MongoDB>))
+                        .route("exists", get().to(handlers::dog::is_owner_of_the_dog::<MongoDB>))
+                        .route("{id}/portrait", put().to(handlers::dog::update_dog_portrait::<MongoDB>))
+                        .route("{id}", put().to(handlers::dog::update_dog::<MongoDB>)),
+                ),
+        )
     })
     .bind(config.listen_address)?
     .run()
