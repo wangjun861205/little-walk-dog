@@ -4,15 +4,13 @@ use crate::core::{
     service::Service,
 };
 use actix_web::{
-    error::{ErrorBadRequest, ErrorForbidden, ErrorInternalServerError},
-    web::{Data, Header, Json, Path, Query},
-    Error, FromRequest, HttpRequest,
+    error::{ErrorForbidden, ErrorInternalServerError},
+    web::{Data, Json, Path, Query},
+    Error, HttpRequest,
 };
 use serde::{Deserialize, Serialize};
 
-use super::common::{HeaderUserID, ListResp};
-use std::future::Future;
-use std::pin::Pin;
+use super::common::HeaderUserID;
 
 #[derive(Debug, Serialize)]
 pub struct CreateDogResult {
@@ -23,7 +21,7 @@ pub async fn create_dog<R>(serive: Data<Service<R>>, req: HttpRequest, Json(dog)
 where
     R: Repository,
 {
-    let uid = req.headers().get("X-User-ID").ok_or(ErrorForbidden("not allowed"))?.to_str().map_err(|e| ErrorForbidden(e))?;
+    let uid = req.headers().get("X-User-ID").ok_or(ErrorForbidden("not allowed"))?.to_str().map_err(ErrorForbidden)?;
     serive.create_dog(uid, &dog).await.map(|id| Json(CreateDogResult { id })).map_err(ErrorInternalServerError)
 }
 
@@ -38,19 +36,19 @@ where
     service.update_dog(&id.0, &dog).await.map_err(ErrorInternalServerError).map(|updated| Json(UpdateDogResult { updated }))
 }
 
-pub async fn my_dogs<R>(service: Data<Service<R>>, HeaderUserID(uid): HeaderUserID, Query(pagination): Query<Pagination>) -> Result<Json<(Vec<Dog>, i64)>, Error>
+pub async fn my_dogs<R>(service: Data<Service<R>>, HeaderUserID(uid): HeaderUserID, Query(pagination): Query<Pagination>) -> Result<Json<Vec<Dog>>, Error>
 where
     R: Repository,
 {
     service.my_dogs(&uid, Some(pagination)).await.map_err(ErrorInternalServerError).map(Json)
 }
 
-pub async fn dogs<R>(service: Data<Service<R>>, Query(query): Query<DogQuery>) -> Result<Json<ListResp<Dog>>, Error>
+pub async fn dogs<R>(service: Data<Service<R>>, Query(query): Query<DogQuery>) -> Result<Json<Vec<Dog>>, Error>
 where
     R: Repository,
 {
-    let (dogs, total) = service.query_dogs(&query).await.map_err(ErrorInternalServerError)?;
-    Ok(Json(ListResp::new(dogs, total)))
+    let dogs = service.query_dogs(&query).await.map_err(ErrorInternalServerError)?;
+    Ok(Json(dogs))
 }
 
 #[derive(Debug, Deserialize)]

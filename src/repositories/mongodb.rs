@@ -175,7 +175,7 @@ impl Repository for MongoDB {
         Ok((breeds, count as i64))
     }
 
-    async fn query_dogs(&self, query: &DogQuery) -> Result<(Vec<Dog>, i64), Error> {
+    async fn query_dogs(&self, query: &DogQuery) -> Result<Vec<Dog>, Error> {
         let mut q = doc! {};
         if let Some(owner_id) = &query.owner_id {
             q.insert("owner_id", owner_id);
@@ -186,12 +186,6 @@ impl Repository for MongoDB {
                 doc! { "$in": id_in.deref().iter().map(|id| ObjectId::parse_str(id).map_err(|e| Error::new("failed to query my dogs").with_cause(e))).collect::<Result<Vec<_>, Error>>()? },
             );
         }
-        let count = self
-            .db
-            .collection::<Dog>("dogs")
-            .count_documents(q.clone(), None)
-            .await
-            .map_err(|e| Error::new("failed to query my dogs").with_cause(e))?;
         let dogs = self
             .db
             .collection::<Dog>("dogs")
@@ -257,7 +251,7 @@ impl Repository for MongoDB {
             .await
             .map(|ds| ds.into_iter().map(|d| from_document::<Dog>(d).unwrap()).collect())
             .map_err(|e| Error::new("failed to query my dogs").with_cause(e))?;
-        Ok((dogs, count as i64))
+        Ok(dogs)
     }
 
     async fn exists_dog(&self, query: &DogQuery) -> Result<bool, Error> {

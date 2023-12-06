@@ -68,6 +68,6 @@ pub trait Repository {
     async fn create_dog(&self, owner_id: &str, dog: &DogCreate) -> Result<String, Error>;
     async fn delete_dog(&self, id: &str) -> Result<bool, Error>;
     async fn update_dog(&self, id: &str, dog: &DogUpdate) -> Result<bool, Error>;
-    async fn query_dogs(&self, query: &DogQuery) -> Result<(Vec<Dog>, i64), Error>;
+    async fn query_dogs(&self, query: &DogQuery) -> Result<Vec<Dog>, Error>;
     async fn exists_dog(&self, query: &DogQuery) -> Result<bool, Error>;
 }

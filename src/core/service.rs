@@ -56,7 +56,7 @@ where
         self.repository.update_dog(id, dog).await
     }
 
-    pub async fn my_dogs(&self, owner_id: &str, pagination: Option<Pagination>) -> Result<(Vec<Dog>, i64), Error> {
+    pub async fn my_dogs(&self, owner_id: &str, pagination: Option<Pagination>) -> Result<Vec<Dog>, Error> {
         self.repository
             .query_dogs(&DogQuery {
                 owner_id: Some(owner_id.to_owned()),
@@ -66,7 +66,7 @@ where
             .await
     }
 
-    pub async fn query_dogs(&self, query: &DogQuery) -> Result<(Vec<Dog>, i64), Error> {
+    pub async fn query_dogs(&self, query: &DogQuery) -> Result<Vec<Dog>, Error> {
         self.repository.query_dogs(query).await
     }
 
