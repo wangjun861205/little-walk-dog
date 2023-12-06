@@ -38,11 +38,11 @@ where
     service.update_dog(&id.0, &dog).await.map_err(ErrorInternalServerError).map(|updated| Json(UpdateDogResult { updated }))
 }
 
-pub async fn my_dogs<R>(service: Data<Service<R>>, HeaderUserID(uid): HeaderUserID, Query(pagination): Query<Option<Pagination>>) -> Result<Json<(Vec<Dog>, i64)>, Error>
+pub async fn my_dogs<R>(service: Data<Service<R>>, HeaderUserID(uid): HeaderUserID, Query(pagination): Query<Pagination>) -> Result<Json<(Vec<Dog>, i64)>, Error>
 where
     R: Repository,
 {
-    service.my_dogs(&uid, pagination).await.map_err(ErrorInternalServerError).map(Json)
+    service.my_dogs(&uid, Some(pagination)).await.map_err(ErrorInternalServerError).map(Json)
 }
 
 pub async fn dogs<R>(service: Data<Service<R>>, Query(query): Query<DogQuery>) -> Result<Json<ListResp<Dog>>, Error>
