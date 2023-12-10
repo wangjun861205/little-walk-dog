@@ -5,12 +5,13 @@ use crate::core::{
 };
 use actix_web::{
     error::{ErrorForbidden, ErrorInternalServerError},
-    web::{Data, Json, Path, Query},
+    web::{Data, Json, Path},
     Error, HttpRequest,
 };
 use serde::{Deserialize, Serialize};
 
 use super::common::HeaderUserID;
+use nb_serde_query::actix_web::Query;
 
 #[derive(Debug, Serialize)]
 pub struct CreateDogResult {

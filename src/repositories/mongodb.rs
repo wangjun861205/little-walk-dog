@@ -186,65 +186,67 @@ impl Repository for MongoDB {
                 doc! { "$in": id_in.deref().iter().map(|id| ObjectId::parse_str(id).map_err(|e| Error::new("failed to query my dogs").with_cause(e))).collect::<Result<Vec<_>, Error>>()? },
             );
         }
+        let mut pipeline = vec![
+            doc! {
+                "$match": q,
+            },
+            doc! {
+                "$addFields": {
+                    "breed_id": { "$toObjectId": "$breed" }
+                }
+            },
+            doc! {
+                "$lookup": {
+                    "from": "breeds",
+                    "localField": "breed_id",
+                    "foreignField": "_id",
+                    "as": "breed",
+                    "pipeline": [
+                        {
+                            "$project": {
+                                "id": { "$toString": "$_id" },
+                                "category": 1,
+                                "name": 1,
+                                "created_at": 1,
+                                "updated_at": 1,
+                            }
+
+                        }
+                    ]
+
+                }
+            },
+            doc! {
+                "$project": {
+                    "id": { "$toString": "$_id" },
+                    "name": 1,
+                    "gender": 1,
+                    "breed": { "$arrayElemAt": [ "$breed", 0 ] } ,
+                    "birthday": 1,
+                    "is_sterilized": 1,
+                    "introduction": 1,
+                    "owner_id": 1,
+                    "tags": 1,
+                    "portrait_id": 1,
+                    "created_at": 1,
+                    "updated_at": 1,
+                }
+            },
+        ];
+        if let Some(pagination) = &query.pagination {
+            pipeline.append(&mut vec![
+                doc! {
+                    "$limit": pagination.limit
+                },
+                doc! {
+                    "$skip": pagination.skip
+                },
+            ])
+        }
         let dogs = self
             .db
             .collection::<Dog>("dogs")
-            .aggregate(
-                vec![
-                    doc! {
-                        "$match": q,
-                    },
-                    doc! {
-                        "$limit": query.pagination.as_ref().map(|p| p.limit)
-                    },
-                    doc! {
-                        "$skip": query.pagination.as_ref().map(|p| p.skip)
-                    },
-                    doc! {
-                        "$addFields": {
-                            "breed_id": { "$toObjectId": "$breed" }
-                        }
-                    },
-                    doc! {
-                        "$lookup": {
-                            "from": "breeds",
-                            "localField": "breed_id",
-                            "foreignField": "_id",
-                            "as": "breed",
-                            "pipeline": [
-                                {
-                                    "$project": {
-                                        "id": { "$toString": "$_id" },
-                                        "category": 1,
-                                        "name": 1,
-                                        "created_at": 1,
-                                        "updated_at": 1,
-                                    }
-
-                                }
-                            ]
-
-                        }
-                    },
-                    doc! {
-                        "$project": {
-                            "id": { "$toString": "$_id" },
-                            "name": 1,
-                            "gender": 1,
-                            "breed": { "$arrayElemAt": [ "$breed", 0 ] } ,
-                            "birthday": 1,
-                            "is_sterilized": 1,
-                            "introduction": 1,
-                            "owner_id": 1,
-                            "tags": 1,
-                            "portrait_id": 1,
-                            "created_at": 1,
-                            "updated_at": 1,
-                        }
-                    },
-                ],
-                None,
-            )
+            .aggregate(pipeline, None)
             .await
             .map_err(|e| Error::new("failed to query my dogs").with_cause(e))?
             .try_collect::<Vec<Document>>()
