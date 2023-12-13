@@ -34,9 +34,9 @@ pub struct DogCreate {
     pub gender: String,
     pub breed: BreedQuery,       // 品种
     pub birthday: DateTime<Utc>, // 生日
-    pub is_sterilized: bool,     // 是否绝育
-    pub introduction: String,
-    pub tags: Vec<String>,
+    // pub is_sterilized: bool,     // 是否绝育
+    // pub introduction: String,
+    // pub tags: Vec<String>,
     pub portrait_id: Option<String>,
 }
 
