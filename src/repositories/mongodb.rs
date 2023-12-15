@@ -1,7 +1,7 @@
 use std::ops::Deref;
 
 use mongodb::{
-    bson::{doc, from_document, oid::ObjectId, Document},
+    bson::{doc, from_document, oid::ObjectId, to_document, Document},
     Database,
 };
 
@@ -15,7 +15,17 @@ use mongodb::options::FindOptions;
 
 use futures::TryStreamExt;
 
-use chrono::Local;
+use chrono::{Local, Utc};
+
+impl TryFrom<&DogCreate> for Document {
+    type Error = Error;
+    fn try_from(dog: &DogCreate) -> Result<Self, Self::Error> {
+        let mut d = to_document(&dog).map_err(|e| Error::new("failed to convert DogCreate to Document").with_cause(e))?;
+        d.insert("created_at", Utc::now());
+        d.insert("updated_at", Utc::now());
+        Ok(d)
+    }
+}
 
 pub struct MongoDB {
     db: Database,
@@ -48,31 +58,20 @@ impl Repository for MongoDB {
             .map(|id| id.to_string())
     }
 
-    async fn create_dog(&self, owner_id: &str, dog: &DogCreate) -> Result<String, Error> {
-        let now = Local::now();
-        let dog = doc! {
-            "name": &dog.name,
-            "gender": &dog.gender,
-            "breed": &dog.breed.id.as_ref().ok_or(Error::new("breed cannot be null"))?,
-            "birthday": &dog.birthday.to_rfc3339(),
-            // "is_sterilized": &dog.is_sterilized,
-            // "introduction": &dog.introduction,
-            "owner_id": owner_id,
-            // "tags": &dog.tags,
-            "portrait_id": &dog.portrait_id,
-            "created_at": now.to_rfc3339(),
-            "updated_at": now.to_rfc3339(),
-        };
+    async fn create_dog(&self, dog: &DogCreate) -> Result<Dog, Error> {
+        let dog = Document::try_from(dog)?;
         let res = self
             .db
             .collection::<Document>("dogs")
             .insert_one(dog, None)
             .await
             .map_err(|e| Error::new("failed to create dog").with_cause(e))?;
-        res.inserted_id
-            .as_object_id()
-            .ok_or(Error::new("failed to create dog").with_cause("invalid inserted id"))
-            .map(|id| id.to_string())
+        self.db
+            .collection("dogs")
+            .find_one(doc! {"_id": res.inserted_id}, None)
+            .await
+            .map_err(|e| Error::new("failed to get created dog").with_cause(e))?
+            .ok_or(Error::new("created dog not exists"))
     }
 
     async fn delete_breed(&self, id: &str) -> Result<bool, Error> {
@@ -251,8 +250,12 @@ impl Repository for MongoDB {
             .map_err(|e| Error::new("failed to query my dogs").with_cause(e))?
             .try_collect::<Vec<Document>>()
             .await
-            .map(|ds| ds.into_iter().map(|d| from_document::<Dog>(d).unwrap()).collect())
-            .map_err(|e| Error::new("failed to query my dogs").with_cause(e))?;
+            .map(|ds| {
+                ds.into_iter()
+                    .map(|d| from_document::<Dog>(d).map_err(|e| Error::new("failed to convert dog to document").with_cause(e)))
+            })
+            .map_err(|e| Error::new("failed to query my dogs").with_cause(e))?
+            .collect::<Result<Vec<Dog>, Error>>()?;
         Ok(dogs)
     }
 

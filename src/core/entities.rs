@@ -56,8 +56,8 @@ pub struct Dog {
     pub gender: Gender,
     pub breed: Breed,            // 品种
     pub birthday: DateTime<Utc>, // 生日
-    pub is_sterilized: bool,     // 是否绝育
-    pub introduction: String,
+    // pub is_sterilized: bool,     // 是否绝育
+    // pub introduction: String,
     pub owner_id: String,
     pub tags: Vec<String>,
     pub portrait_id: Option<String>,

@@ -11,7 +11,7 @@ chrono = { version = "0.4.31", features = ["serde"] }
 dotenv = "0.15.0"
 env_logger = "0.10.0"
 futures = "0.3.28"
-mongodb = "2.7.0"
+mongodb = { version = "2.7.0", features = ["bson-chrono-0_4"] }
 nb-from-env = "^0.2"
 serde = { version = "1.0.188", features = ["derive"] }
 sqlx = { version = "0.7.1", features = ["postgres"] }

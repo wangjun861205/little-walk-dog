@@ -18,12 +18,11 @@ pub struct CreateDogResult {
     pub id: String,
 }
 
-pub async fn create_dog<R>(serive: Data<Service<R>>, req: HttpRequest, Json(dog): Json<DogCreate>) -> Result<Json<CreateDogResult>, Error>
+pub async fn create_dog<R>(serive: Data<Service<R>>, Json(dog): Json<DogCreate>) -> Result<Json<Dog>, Error>
 where
     R: Repository,
 {
-    let uid = req.headers().get("X-User-ID").ok_or(ErrorForbidden("not allowed"))?.to_str().map_err(ErrorForbidden)?;
-    serive.create_dog(uid, &dog).await.map(|id| Json(CreateDogResult { id })).map_err(ErrorInternalServerError)
+    serive.create_dog(&dog).await.map(Json).map_err(ErrorInternalServerError)
 }
 
 #[derive(Debug, Serialize)]

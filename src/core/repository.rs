@@ -1,8 +1,7 @@
 use crate::core::entities::{Breed, Category, Dog};
 use crate::core::error::Error;
 use chrono::{DateTime, Utc};
-use mongodb::bson::doc;
-use nb_serde_query::Array;
+use mongodb::bson::{doc, Document};
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -30,13 +29,14 @@ pub struct BreedQuery {
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct DogCreate {
+    pub owner_id: String,
     pub name: String,
     pub gender: String,
     pub breed: BreedQuery,       // 品种
     pub birthday: DateTime<Utc>, // 生日
     // pub is_sterilized: bool,     // 是否绝育
     // pub introduction: String,
-    // pub tags: Vec<String>,
+    pub tags: Vec<String>,
     pub portrait_id: Option<String>,
 }
 
@@ -65,7 +65,7 @@ pub trait Repository {
     async fn create_breed(&self, breed: &BreedCreate) -> Result<String, Error>;
     async fn delete_breed(&self, id: &str) -> Result<bool, Error>;
     async fn query_breeds(&self, query: &BreedQuery) -> Result<(Vec<Breed>, i64), Error>;
-    async fn create_dog(&self, owner_id: &str, dog: &DogCreate) -> Result<String, Error>;
+    async fn create_dog(&self, dog: &DogCreate) -> Result<Dog, Error>;
     async fn delete_dog(&self, id: &str) -> Result<bool, Error>;
     async fn update_dog(&self, id: &str, dog: &DogUpdate) -> Result<bool, Error>;
     async fn query_dogs(&self, query: &DogQuery) -> Result<Vec<Dog>, Error>;
