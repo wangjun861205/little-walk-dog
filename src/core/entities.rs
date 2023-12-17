@@ -30,8 +30,6 @@ pub struct Breed {
     pub id: String,
     pub category: Category,
     pub name: String,
-    pub created_at: DateTime<Utc>,
-    pub updated_at: DateTime<Utc>,
 }
 
 // 性别
@@ -61,6 +59,4 @@ pub struct Dog {
     pub owner_id: String,
     pub tags: Vec<String>,
     pub portrait_id: Option<String>,
-    pub created_at: DateTime<Utc>,
-    pub updated_at: DateTime<Utc>,
 }

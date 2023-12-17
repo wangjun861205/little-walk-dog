@@ -1,7 +1,8 @@
 use std::ops::Deref;
 
 use mongodb::{
-    bson::{doc, from_document, oid::ObjectId, to_document, Document},
+    bson::{doc, from_document, oid::ObjectId, to_document, Bson, Document},
+    options::FindOneOptions,
     Database,
 };
 
@@ -24,6 +25,30 @@ impl TryFrom<&DogCreate> for Document {
         d.insert("created_at", Utc::now());
         d.insert("updated_at", Utc::now());
         Ok(d)
+    }
+}
+
+impl Dog {
+    pub fn projection() -> Document {
+        doc! {
+            "id": {"$toString": "$_id"},
+            "name": 1,
+            "gender": 1,
+            "breed": 1,
+            "birthday": 1,
+            "owner_id": 1,
+            "tags": 1,
+            "portrait_id": 1,
+        }
+    }
+}
+
+impl From<Dog> for Bson {
+    fn from(value: Dog) -> Self {
+        let mut d = to_document(&value).unwrap();
+        d.insert("_id", ObjectId::parse_str(&value.id).unwrap());
+        d.remove("id");
+        Bson::Document(d)
     }
 }
 
@@ -68,7 +93,10 @@ impl Repository for MongoDB {
             .map_err(|e| Error::new("failed to create dog").with_cause(e))?;
         self.db
             .collection("dogs")
-            .find_one(doc! {"_id": res.inserted_id}, None)
+            .find_one(
+                doc! {"_id": res.inserted_id},
+                FindOneOptions::builder().projection(Dog::projection()).build(),
+            )
             .await
             .map_err(|e| Error::new("failed to get created dog").with_cause(e))?
             .ok_or(Error::new("created dog not exists"))
@@ -77,7 +105,10 @@ impl Repository for MongoDB {
     async fn delete_breed(&self, id: &str) -> Result<bool, Error> {
         self.db
             .collection::<Breed>("breeds")
-            .delete_one(doc! {"_id": ObjectId::parse_str(id).map_err(|e| Error::new("failed to delete breed").with_cause(e))?}, None)
+            .delete_one(
+                doc! {"_id": ObjectId::parse_str(id).map_err(|e| Error::new("failed to delete breed").with_cause(e))?},
+                None,
+            )
             .await
             .map_err(|e| Error::new("failed to delete breed").with_cause(e))
             .map(|res| res.deleted_count > 0)
@@ -86,7 +117,10 @@ impl Repository for MongoDB {
     async fn delete_dog(&self, id: &str) -> Result<bool, Error> {
         self.db
             .collection::<Breed>("dogs")
-            .delete_one(doc! {"_id": ObjectId::parse_str(id).map_err(|e| Error::new("failed to delete dog").with_cause(e))?}, None)
+            .delete_one(
+                doc! {"_id": ObjectId::parse_str(id).map_err(|e| Error::new("failed to delete dog").with_cause(e))?},
+                None,
+            )
             .await
             .map_err(|e| Error::new("failed to delete dog").with_cause(e))
             .map(|res| res.deleted_count > 0)
@@ -185,84 +219,99 @@ impl Repository for MongoDB {
                 doc! { "$in": id_in.deref().iter().map(|id| ObjectId::parse_str(id).map_err(|e| Error::new("failed to query my dogs").with_cause(e))).collect::<Result<Vec<_>, Error>>()? },
             );
         }
-        let mut pipeline = vec![
-            doc! {
-                "$match": q,
-            },
-            doc! {
-                "$addFields": {
-                    "breed_id": { "$toObjectId": "$breed" }
-                }
-            },
-            doc! {
-                "$lookup": {
-                    "from": "breeds",
-                    "localField": "breed_id",
-                    "foreignField": "_id",
-                    "as": "breed",
-                    "pipeline": [
-                        {
-                            "$project": {
-                                "id": { "$toString": "$_id" },
-                                "category": 1,
-                                "name": 1,
-                                "created_at": 1,
-                                "updated_at": 1,
-                            }
-
-                        }
-                    ]
-
-                }
-            },
-            doc! {
-                "$project": {
-                    "id": { "$toString": "$_id" },
-                    "name": 1,
-                    "gender": 1,
-                    "breed": { "$arrayElemAt": [ "$breed", 0 ] } ,
-                    "birthday": 1,
-                    "is_sterilized": 1,
-                    "introduction": 1,
-                    "owner_id": 1,
-                    "tags": 1,
-                    "portrait_id": 1,
-                    "created_at": 1,
-                    "updated_at": 1,
-                }
-            },
-        ];
-        if let Some(pagination) = &query.pagination {
-            pipeline.append(&mut vec![
-                doc! {
-                    "$limit": pagination.limit
-                },
-                doc! {
-                    "$skip": pagination.skip
-                },
-            ])
-        }
-        let dogs = self
-            .db
+        let options = FindOptions::builder()
+            .projection(Dog::projection())
+            .skip(query.pagination.as_ref().map(|p| p.skip as u64))
+            .limit(query.pagination.as_ref().map(|p| p.limit));
+        self.db
             .collection::<Dog>("dogs")
-            .aggregate(pipeline, None)
+            .find(q, options.build())
             .await
             .map_err(|e| Error::new("failed to query my dogs").with_cause(e))?
-            .try_collect::<Vec<Document>>()
+            .try_collect::<Vec<Dog>>()
             .await
-            .map(|ds| {
-                ds.into_iter()
-                    .map(|d| from_document::<Dog>(d).map_err(|e| Error::new("failed to convert dog to document").with_cause(e)))
-            })
-            .map_err(|e| Error::new("failed to query my dogs").with_cause(e))?
-            .collect::<Result<Vec<Dog>, Error>>()?;
-        Ok(dogs)
+            .map_err(|e| Error::new("failed to query my dogs").with_cause(e))
+        // let mut pipeline = vec![
+        //     doc! {
+        //         "$match": q,
+        //     },
+        //     doc! {
+        //         "$addFields": {
+        //             "breed_id": { "$toObjectId": "$breed" }
+        //         }
+        //     },
+        //     doc! {
+        //         "$lookup": {
+        //             "from": "breeds",
+        //             "localField": "breed_id",
+        //             "foreignField": "_id",
+        //             "as": "breed",
+        //             "pipeline": [
+        //                 {
+        //                     "$project": {
+        //                         "id": { "$toString": "$_id" },
+        //                         "category": 1,
+        //                         "name": 1,
+        //                         "created_at": 1,
+        //                         "updated_at": 1,
+        //                     }
+
+        //                 }
+        //             ]
+
+        //         }
+        //     },
+        //     doc! {
+        //         "$project": {
+        //             "id": { "$toString": "$_id" },
+        //             "name": 1,
+        //             "gender": 1,
+        //             "breed": { "$arrayElemAt": [ "$breed", 0 ] } ,
+        //             "birthday": 1,
+        //             "is_sterilized": 1,
+        //             "introduction": 1,
+        //             "owner_id": 1,
+        //             "tags": 1,
+        //             "portrait_id": 1,
+        //             "created_at": 1,
+        //             "updated_at": 1,
+        //         }
+        //     },
+        // ];
+        // if let Some(pagination) = &query.pagination {
+        //     pipeline.append(&mut vec![
+        //         doc! {
+        //             "$limit": pagination.limit
+        //         },
+        //         doc! {
+        //             "$skip": pagination.skip
+        //         },
+        //     ])
+        // }
+        // let dogs = self
+        //     .db
+        //     .collection::<Dog>("dogs")
+        //     .aggregate(pipeline, None)
+        //     .await
+        //     .map_err(|e| Error::new("failed to query my dogs").with_cause(e))?
+        //     .try_collect::<Vec<Document>>()
+        //     .await
+        //     .map(|ds| {
+        //         ds.into_iter()
+        //             .map(|d| from_document::<Dog>(d).map_err(|e| Error::new("failed to convert dog to document").with_cause(e)))
+        //     })
+        //     .map_err(|e| Error::new("failed to query my dogs").with_cause(e))?
+        //     .collect::<Result<Vec<Dog>, Error>>()?;
+        // Ok(dogs)
     }
 
     async fn exists_dog(&self, query: &DogQuery) -> Result<bool, Error> {
         let mut q = doc! {};
         if let Some(id) = &query.id {
-            q.insert("_id", ObjectId::parse_str(id).map_err(|e| Error::new("failed to query my dogs").with_cause(e))?);
+            q.insert(
+                "_id",
+                ObjectId::parse_str(id).map_err(|e| Error::new("failed to query my dogs").with_cause(e))?,
+            );
         }
         if let Some(owner_id) = &query.owner_id {
             q.insert("owner_id", owner_id);

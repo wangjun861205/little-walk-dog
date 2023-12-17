@@ -25,6 +25,7 @@ pub struct BreedUpdate {
 pub struct BreedQuery {
     pub id: Option<String>,
     pub category: Option<Category>,
+    pub name: Option<String>,
 }
 
 #[derive(Debug, Serialize, Deserialize)]

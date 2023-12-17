@@ -4,9 +4,9 @@ use crate::core::{
     service::Service,
 };
 use actix_web::{
-    error::{ErrorForbidden, ErrorInternalServerError},
+    error::ErrorInternalServerError,
     web::{Data, Json, Path},
-    Error, HttpRequest,
+    Error,
 };
 use serde::{Deserialize, Serialize};
 
